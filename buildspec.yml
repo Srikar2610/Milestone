@@ -1,0 +1,146 @@
+java
+
+version: 0.2
+
+env:
+  variables:
+    ACCOUNT_ID: 
+    REGION: 
+    REPO_NAME: 
+    IMAGE_TAG: 
+    IMAGE_URI: 
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+    commands:
+      - echo Installing Maven and Docker...
+      - yum install -y maven docker
+
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+
+  build:
+    commands:
+      - echo Building JAR inside app-tier...
+      - mvn clean package -DskipTests
+      - echo Building Docker image...
+      - docker build -t $REPO_NAME:$IMAGE_TAG .
+      - docker tag $REPO_NAME:$IMAGE_TAG $IMAGE_URI
+
+  post_build:
+    commands:
+      - echo Pushing image to Amazon ECR...
+      - docker push $IMAGE_URI
+      - echo Preparing Kubernetes manifests...
+      - mkdir -p k8s-out
+      - sed "s|IMAGE_PLACEHOLDER|$IMAGE_URI|g" deployment.yaml > k8s-out/deployment.yaml
+      - cp service.yaml k8s-out/service.yaml
+      - echo Done preparing artifacts.
+
+artifacts:
+  base-directory: k8s-out
+  files:
+    - deployment.yaml
+    - service.yaml
+
+------------------------------------------------------------------------
+python
+
+version: 0.2
+
+env:
+  variables:
+    ACCOUNT_ID: 
+    REGION: 
+    REPO_NAME: 
+    IMAGE_TAG: 
+    IMAGE_URI: 
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo Installing Docker and Python dependencies...
+      - yum install -y docker
+      - pip install -r requirements.txt
+
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+
+  build:
+    commands:
+      - echo Building Docker image...
+      - docker build -t $REPO_NAME:$IMAGE_TAG .
+      - docker tag $REPO_NAME:$IMAGE_TAG $IMAGE_URI
+
+  post_build:
+    commands:
+      - echo Pushing image to Amazon ECR...
+      - docker push $IMAGE_URI
+      - echo Preparing Kubernetes manifests...
+      - mkdir -p k8s-out
+      - sed "s|IMAGE_PLACEHOLDER|$IMAGE_URI|g" deployment.yaml > k8s-out/deployment.yaml
+      - cp service.yaml k8s-out/service.yaml
+      - echo Done preparing artifacts.
+
+artifacts:
+  base-directory: k8s-out
+  files:
+    - deployment.yaml
+    - service.yaml
+
+-------------------------------------------------------------------------
+nodejs
+
+version: 0.2
+
+env:
+  variables:
+    ACCOUNT_ID: 
+    REGION: 
+    REPO_NAME: 
+    IMAGE_TAG: 
+    IMAGE_URI: 
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+    commands:
+      - echo Installing Docker and Node.js dependencies...
+      - yum install -y docker
+      - npm install
+
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+
+  build:
+    commands:
+      - echo Building Docker image...
+      - docker build -t $REPO_NAME:$IMAGE_TAG .
+      - docker tag $REPO_NAME:$IMAGE_TAG $IMAGE_URI
+
+  post_build:
+    commands:
+      - echo Pushing image to Amazon ECR...
+      - docker push $IMAGE_URI
+      - echo Preparing Kubernetes manifests...
+      - mkdir -p k8s-out
+      - sed "s|IMAGE_PLACEHOLDER|$IMAGE_URI|g" deployment.yaml > k8s-out/deployment.yaml
+      - cp service.yaml k8s-out/service.yaml
+      - echo Done preparing artifacts.
+
+artifacts:
+  base-directory: k8s-out
+  files:
+    - deployment.yaml
+    - service.yaml
